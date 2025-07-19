@@ -187,6 +187,20 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
 
   // Handle SubSection Modal Close and Update (local state only)
   const handleSubSectionUpdate = (updatedSubSection, sectionId, isNew = false) => {
+    console.log("🔄 Handling subsection update:", {
+      sectionId,
+      isNew,
+      title: updatedSubSection.title,
+      hasVideoFile: !!updatedSubSection.videoFile,
+      hasVideoUrlDirect: !!updatedSubSection.videoUrlDirect,
+      videoFile: updatedSubSection.videoFile ? {
+        name: updatedSubSection.videoFile.name,
+        size: updatedSubSection.videoFile.size,
+        type: updatedSubSection.videoFile.type
+      } : null,
+      videoUrlDirect: updatedSubSection.videoUrlDirect
+    })
+    
     const updatedCourseContent = courseData.courseContent.map((section) => {
       if (section._id === sectionId) {
         if (isNew) {
@@ -196,16 +210,18 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
             _id: `temp_sub_${Date.now()}`,
             isNew: true
           }
+          console.log("📝 Adding new subsection to local state:", newSubSection)
           return {
             ...section,
             subSection: [...section.subSection, newSubSection]
           }
         } else {
           // Update existing subsection
+          console.log("📝 Updating existing subsection in local state")
           return {
             ...section,
             subSection: section.subSection.map(sub => 
-              sub._id === updatedSubSection._id ? updatedSubSection : sub
+              sub._id === updatedSubSection._id ? { ...updatedSubSection, isModified: true } : sub
             )
           }
         }
@@ -217,7 +233,7 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
     setCourseData(updatedCourse)
     setHasUnsavedChanges(true) // Explicitly set unsaved changes
     
-    // Remove toasts - lecture changes are visible in UI with "(Unsaved)" indicators
+    console.log("✅ Local state updated successfully")
   }
 
   // Save all changes to database
@@ -240,47 +256,89 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
             }, token)
             
             console.log("Section creation result:", result)
+            console.log("🔍 Section creation result structure:", {
+              hasResult: !!result,
+              hasUpdatedCourseDetails: !!(result && result.updatedCourseDetails),
+              resultKeys: result ? Object.keys(result) : [],
+              resultType: typeof result
+            })
             
+            // The result might be the updated course directly, not wrapped in updatedCourseDetails
+            let updatedCourse = null;
             if (result && result.updatedCourseDetails) {
+              updatedCourse = result.updatedCourseDetails;
+            } else if (result && result.courseContent) {
+              updatedCourse = result;
+            } else if (result && result._id) {
+              updatedCourse = result;
+            }
+            
+            console.log("🔍 Updated course structure:", {
+              hasUpdatedCourse: !!updatedCourse,
+              courseId: updatedCourse?._id,
+              courseName: updatedCourse?.courseName,
+              courseContentLength: updatedCourse?.courseContent?.length || 0
+            })
+            
+            if (updatedCourse && updatedCourse.courseContent) {
               // Find the newly created section from the updated course content
-              const newSection = result.updatedCourseDetails.courseContent.find(s => s.sectionName === section.sectionName)
+              const newSection = updatedCourse.courseContent.find(s => s.sectionName === section.sectionName)
+              console.log("🔍 Found newly created section:", {
+                sectionId: newSection?._id,
+                sectionName: newSection?.sectionName,
+                hasNewSection: !!newSection
+              })
+              
+              console.log("🔍 Original section subsections:", {
+                sectionName: section.sectionName,
+                subSectionCount: section.subSection?.length || 0,
+                subSections: section.subSection?.map(sub => ({
+                  title: sub.title,
+                  isNew: sub.isNew,
+                  hasVideoFile: !!sub.videoFile
+                })) || []
+              })
+              
               if (newSection) {
                 // Handle new subsections in this new section
+                console.log("🔄 Processing subsections for new section...")
                 for (const subSection of section.subSection) {
                   if (subSection.isNew) {
                     try {
-                      console.log("Creating new subsection in new section:", {
+                      console.log("🔄 Creating new subsection in new section:", {
                         sectionId: newSection._id,
                         title: subSection.title,
                         description: subSection.description,
                         hasVideoFile: !!subSection.videoFile,
-                        hasVideoUrlDirect: !!subSection.videoUrlDirect
+                        hasVideoUrlDirect: !!subSection.videoUrlDirect,
+                        videoFileName: subSection.videoFile ? subSection.videoFile.name : 'No file',
+                        videoFileSize: subSection.videoFile ? (subSection.videoFile.size / (1024 * 1024)).toFixed(2) + 'MB' : 'No file'
                       })
                       
-                      // Prepare data object for createSubSection
-                      const subSectionData = {
-                        sectionId: newSection._id,
-                        title: subSection.title,
-                        description: subSection.description
-                      }
+                      // Prepare FormData for createSubSection to handle file uploads
+                      const subSectionFormData = new FormData()
+                      subSectionFormData.append('sectionId', newSection._id)
+                      subSectionFormData.append('title', subSection.title)
+                      subSectionFormData.append('description', subSection.description)
                       
                       // Handle video - either file or direct URL
                       if (subSection.videoFile) {
                         console.log("🚀 Adding video file for upload:", subSection.videoFile.name)
-                        subSectionData.video = subSection.videoFile
+                        subSectionFormData.append('video', subSection.videoFile)
                       } else if (subSection.videoUrlDirect) {
                         console.log("Using existing video URL:", subSection.videoUrlDirect)
-                        subSectionData.video = subSection.videoUrlDirect
+                        subSectionFormData.append('videoUrl', subSection.videoUrlDirect)
                       }
                       
                       if (subSection.quiz) {
-                        subSectionData.quiz = subSection.quiz._id || subSection.quiz
+                        subSectionFormData.append('quiz', subSection.quiz._id || subSection.quiz)
                       }
                       
-                      const subSectionResult = await createSubSection(subSectionData, token)
-                      console.log("Subsection creation result:", subSectionResult)
+                      console.log("🚀 About to call createSubSection API...")
+                      const subSectionResult = await createSubSection(subSectionFormData, token)
+                      console.log("✅ Subsection creation result:", subSectionResult)
                     } catch (subError) {
-                      console.error("Error creating subsection in new section:", subError)
+                      console.error("❌ Error creating subsection in new section:", subError)
                       hasErrors = true
                       errorMessages.push(`Failed to create lecture "${subSection.title}": ${subError.message}`)
                     }
@@ -327,27 +385,26 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
                   hasVideoUrlDirect: !!subSection.videoUrlDirect
                 })
                 
-                // Prepare data object for createSubSection
-                const subSectionData = {
-                  sectionId: section._id,
-                  title: subSection.title,
-                  description: subSection.description
-                }
+                // Prepare FormData for createSubSection to handle file uploads
+                const subSectionFormData = new FormData()
+                subSectionFormData.append('sectionId', section._id)
+                subSectionFormData.append('title', subSection.title)
+                subSectionFormData.append('description', subSection.description)
                 
                 // Handle video - either file or direct URL
                 if (subSection.videoFile) {
                   console.log("🚀 Adding video file for upload:", subSection.videoFile.name)
-                  subSectionData.video = subSection.videoFile
+                  subSectionFormData.append('video', subSection.videoFile)
                 } else if (subSection.videoUrlDirect) {
                   console.log("Using existing video URL:", subSection.videoUrlDirect)
-                  subSectionData.video = subSection.videoUrlDirect
+                  subSectionFormData.append('videoUrl', subSection.videoUrlDirect)
                 }
                 
                 if (subSection.quiz) {
-                  subSectionData.quiz = subSection.quiz._id || subSection.quiz
+                  subSectionFormData.append('quiz', subSection.quiz._id || subSection.quiz)
                 }
                 
-                const subSectionResult = await createSubSection(subSectionData, token)
+                const subSectionResult = await createSubSection(subSectionFormData, token)
                 console.log("Subsection creation result:", subSectionResult)
               } catch (subError) {
                 console.error("Error creating subsection:", subError)
@@ -365,28 +422,27 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
                   hasVideoUrlDirect: !!subSection.videoUrlDirect
                 })
                 
-                // Prepare data object for updateSubSection
-                const updateData = {
-                  sectionId: section._id,
-                  subSectionId: subSection._id,
-                  title: subSection.title,
-                  description: subSection.description
-                }
+                // Prepare FormData for updateSubSection to handle file uploads
+                const updateFormData = new FormData()
+                updateFormData.append('sectionId', section._id)
+                updateFormData.append('subSectionId', subSection._id)
+                updateFormData.append('title', subSection.title)
+                updateFormData.append('description', subSection.description)
                 
                 // Handle video - either file or direct URL
                 if (subSection.videoFile) {
                   console.log("🚀 Adding video file for update:", subSection.videoFile.name)
-                  updateData.videoFile = subSection.videoFile
+                  updateFormData.append('videoFile', subSection.videoFile)
                 } else if (subSection.videoUrlDirect) {
                   console.log("Using existing video URL:", subSection.videoUrlDirect)
-                  updateData.videoFile = subSection.videoUrlDirect
+                  updateFormData.append('videoUrl', subSection.videoUrlDirect)
                 }
                 
                 if (subSection.quiz) {
-                  updateData.quiz = subSection.quiz._id || subSection.quiz
+                  updateFormData.append('quiz', subSection.quiz._id || subSection.quiz)
                 }
                 
-                const updateResult = await updateSubSection(updateData, token)
+                const updateResult = await updateSubSection(updateFormData, token)
                 console.log("Subsection update result:", updateResult)
               } catch (updateError) {
                 console.error("Error updating subsection:", updateError)

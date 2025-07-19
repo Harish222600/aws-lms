@@ -131,7 +131,9 @@ export default function AdminSubSectionModal({
       hasVideoUrlDirect: !!newSubSection.videoUrlDirect,
       videoUrlDirect: newSubSection.videoUrlDirect,
       originalVideoData: data.lectureVideo,
-      videoType: typeof data.lectureVideo
+      videoType: typeof data.lectureVideo,
+      videoFileName: newSubSection.videoFile ? newSubSection.videoFile.name : 'No file',
+      videoFileSize: newSubSection.videoFile ? (newSubSection.videoFile.size / (1024 * 1024)).toFixed(2) + 'MB' : 'No file'
     })
     
     onUpdate(newSubSection)

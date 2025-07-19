@@ -1,4 +1,4 @@
-import { toast } from "react-hot-toast"
+ import { toast } from "react-hot-toast"
 const BASE_URL = import.meta.env.VITE_APP_BASE_URL;
 import { updateCompletedLectures } from "../../slices/viewCourseSlice"
 // import { setLoading } from "../../slices/profileSlice";
@@ -208,24 +208,33 @@ export const createSubSection = async (data, token) => {
   const toastId = toast.loading("Loading...")
 
   try {
-    // Handle video upload - check if it's a File object or URL string
-    const formData = new FormData()
+    let formData;
     
-    // Add all form fields
-    Object.keys(data).forEach(key => {
-      if (key === 'video') {
-        // Handle video file
-        if (data[key] instanceof File) {
-          // File object - add to FormData for server-side upload
+    // Check if data is already FormData (from AdminCourseBuilder batch save)
+    if (data instanceof FormData) {
+      console.log("Using existing FormData for subsection creation")
+      formData = data;
+    } else {
+      // Handle legacy object format - convert to FormData
+      console.log("Converting object to FormData for subsection creation")
+      formData = new FormData()
+      
+      // Add all form fields
+      Object.keys(data).forEach(key => {
+        if (key === 'video') {
+          // Handle video file
+          if (data[key] instanceof File) {
+            // File object - add to FormData for server-side upload
+            formData.append(key, data[key])
+          } else if (typeof data[key] === 'string' && data[key].startsWith('http')) {
+            // URL string - already uploaded via direct upload
+            formData.append('videoUrl', data[key])
+          }
+        } else {
           formData.append(key, data[key])
-        } else if (typeof data[key] === 'string' && data[key].startsWith('http')) {
-          // URL string - already uploaded via direct upload
-          formData.append('videoUrl', data[key])
         }
-      } else {
-        formData.append(key, data[key])
-      }
-    })
+      })
+    }
 
     const response = await apiConnector("POST", CREATE_SUBSECTION_API, formData, {
       Authorization: `Bearer ${token}`,
@@ -306,24 +315,33 @@ export const updateSubSection = async (data, token) => {
   const toastId = toast.loading("Loading...")
 
   try {
-    // Handle video upload - check if it's a File object or URL string
-    const formData = new FormData()
+    let formData;
     
-    // Add all form fields
-    Object.keys(data).forEach(key => {
-      if (key === 'videoFile') {
-        // Handle video file
-        if (data[key] instanceof File) {
-          // File object - add to FormData for server-side upload
+    // Check if data is already FormData (from AdminCourseBuilder batch save)
+    if (data instanceof FormData) {
+      console.log("Using existing FormData for subsection update")
+      formData = data;
+    } else {
+      // Handle legacy object format - convert to FormData
+      console.log("Converting object to FormData for subsection update")
+      formData = new FormData()
+      
+      // Add all form fields
+      Object.keys(data).forEach(key => {
+        if (key === 'videoFile') {
+          // Handle video file
+          if (data[key] instanceof File) {
+            // File object - add to FormData for server-side upload
+            formData.append(key, data[key])
+          } else if (typeof data[key] === 'string' && data[key].startsWith('http')) {
+            // URL string - already uploaded via direct upload
+            formData.append('videoUrl', data[key])
+          }
+        } else {
           formData.append(key, data[key])
-        } else if (typeof data[key] === 'string' && data[key].startsWith('http')) {
-          // URL string - already uploaded via direct upload
-          formData.append('videoUrl', data[key])
         }
-      } else {
-        formData.append(key, data[key])
-      }
-    })
+      })
+    }
 
     const response = await apiConnector("POST", UPDATE_SUBSECTION_API, formData, {
       Authorization: `Bearer ${token}`,
