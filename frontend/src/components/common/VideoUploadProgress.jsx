@@ -1,18 +1,21 @@
 import React from 'react'
 import ProgressBar from "@ramonak/react-progress-bar"
 import { RxCross2 } from "react-icons/rx"
-import { FiUploadCloud, FiCheck, FiX } from "react-icons/fi"
+import { FiUploadCloud, FiCheck, FiX, FiPause, FiPlay } from "react-icons/fi"
 
 const VideoUploadProgress = ({ 
   progress = 0, 
   fileName = '', 
   fileSize = 0, 
-  status = 'uploading', // 'uploading', 'completed', 'error', 'cancelled'
+  status = 'uploading', // 'idle', 'uploading', 'completed', 'error', 'cancelled', 'paused'
   onCancel = null,
+  onPause = null,
+  onResume = null,
   error = null,
   isChunked = false,
   currentChunk = 0,
-  totalChunks = 0
+  totalChunks = 0,
+  uploadType = 'direct' // 'direct' or 'resumable'
 }) => {
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes'
@@ -29,8 +32,12 @@ const VideoUploadProgress = ({
       case 'error':
       case 'cancelled':
         return <FiX className="text-red-400 text-xl" />
-      default:
+      case 'paused':
+        return <FiPause className="text-yellow-400 text-xl" />
+      case 'uploading':
         return <FiUploadCloud className="text-blue-400 text-xl animate-pulse" />
+      default:
+        return <FiUploadCloud className="text-richblack-400 text-xl" />
     }
   }
 
@@ -42,11 +49,15 @@ const VideoUploadProgress = ({
         return error || 'Upload failed'
       case 'cancelled':
         return 'Upload cancelled'
-      default:
+      case 'paused':
+        return 'Upload paused'
+      case 'uploading':
         if (isChunked && totalChunks > 0) {
           return `Uploading chunk ${currentChunk + 1} of ${totalChunks}...`
         }
-        return 'Uploading video...'
+        return uploadType === 'resumable' ? 'Uploading video (resumable)...' : 'Uploading video...'
+      default:
+        return 'Ready to upload'
     }
   }
 
@@ -57,8 +68,12 @@ const VideoUploadProgress = ({
       case 'error':
       case 'cancelled':
         return 'text-red-400'
-      default:
+      case 'paused':
+        return 'text-yellow-400'
+      case 'uploading':
         return 'text-blue-400'
+      default:
+        return 'text-richblack-400'
     }
   }
 
@@ -69,8 +84,12 @@ const VideoUploadProgress = ({
       case 'error':
       case 'cancelled':
         return '#EF4444' // red-500
-      default:
+      case 'paused':
+        return '#F59E0B' // yellow-500
+      case 'uploading':
         return '#3B82F6' // blue-500
+      default:
+        return '#6B7280' // gray-500
     }
   }
 
@@ -90,16 +109,40 @@ const VideoUploadProgress = ({
           </div>
         </div>
         
-        {/* Cancel button - only show during upload */}
-        {status === 'uploading' && onCancel && (
-          <button
-            onClick={onCancel}
-            className="p-1 hover:bg-richblack-600 rounded transition-colors"
-            title="Cancel upload"
-          >
-            <RxCross2 className="text-richblack-400 hover:text-richblack-200 text-lg" />
-          </button>
-        )}
+        {/* Control buttons */}
+        <div className="flex items-center gap-1">
+          {/* Pause/Resume button for resumable uploads */}
+          {uploadType === 'resumable' && status === 'uploading' && onPause && (
+            <button
+              onClick={onPause}
+              className="p-1 hover:bg-richblack-600 rounded transition-colors"
+              title="Pause upload"
+            >
+              <FiPause className="text-richblack-400 hover:text-richblack-200 text-lg" />
+            </button>
+          )}
+          
+          {uploadType === 'resumable' && status === 'paused' && onResume && (
+            <button
+              onClick={onResume}
+              className="p-1 hover:bg-richblack-600 rounded transition-colors"
+              title="Resume upload"
+            >
+              <FiPlay className="text-richblack-400 hover:text-richblack-200 text-lg" />
+            </button>
+          )}
+
+          {/* Cancel button */}
+          {(status === 'uploading' || status === 'paused') && onCancel && (
+            <button
+              onClick={onCancel}
+              className="p-1 hover:bg-richblack-600 rounded transition-colors"
+              title="Cancel upload"
+            >
+              <RxCross2 className="text-richblack-400 hover:text-richblack-200 text-lg" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Progress Bar */}
@@ -135,11 +178,38 @@ const VideoUploadProgress = ({
         </div>
       )}
 
-      {/* Chunked Upload Info */}
-      {isChunked && status === 'uploading' && totalChunks > 0 && (
+      {/* Upload Type Info */}
+      {uploadType === 'resumable' && (status === 'uploading' || status === 'paused') && (
         <div className="bg-blue-900/20 border border-blue-500/30 rounded p-2">
-          <p className="text-xs text-blue-400">
-            Large file detected - using chunked upload for better reliability
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-blue-400">
+              {isChunked && totalChunks > 0 
+                ? `Resumable upload - ${totalChunks} chunks (${(fileSize / totalChunks / 1024 / 1024).toFixed(1)}MB each)`
+                : 'Large file - using resumable upload for reliability'
+              }
+            </p>
+            {status === 'paused' && (
+              <span className="text-xs text-yellow-400 font-medium">
+                Upload can be resumed anytime
+              </span>
+            )}
+          </div>
+          
+          {isChunked && totalChunks > 0 && (
+            <div className="mt-2 flex items-center gap-4 text-xs text-blue-300">
+              <span>Chunks: {currentChunk}/{totalChunks}</span>
+              <span>Size: {formatFileSize(fileSize)}</span>
+              <span>Direct to cloud storage</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Direct Upload Info */}
+      {uploadType === 'direct' && status === 'uploading' && (
+        <div className="bg-green-900/20 border border-green-500/30 rounded p-2">
+          <p className="text-xs text-green-400">
+            Direct upload to cloud storage - Fast and efficient
           </p>
         </div>
       )}

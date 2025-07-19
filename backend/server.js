@@ -35,7 +35,7 @@ const chatRoutes = require('./routes/chat');
 const jobRoutes = require('./routes/jobs');
 const jobApplicationRoutes = require('./routes/jobApplications');
 const recycleBinRoutes = require('./routes/recycleBin');
-const chunkedUploadRoutes = require('./routes/chunkedUpload');
+const uploadRoutes = require('./routes/upload');
 const videoPlaybackRoutes = require('./routes/videoPlayback');
 
 // middleware 
@@ -288,8 +288,8 @@ app.use('/api/v1/jobs', jobRoutes);
 app.use('/api/v1/job-applications', jobApplicationRoutes);
 // Recycle Bin Routes
 app.use('/api/v1/recycle-bin', recycleBinRoutes);
-// Chunked Upload Routes
-app.use('/api/v1/chunked-upload', chunkedUploadRoutes);
+// Direct Upload Routes
+app.use('/api/v1/upload', uploadRoutes);
 // Video Playback Routes
 app.use('/api/v1/video', videoPlaybackRoutes);
 

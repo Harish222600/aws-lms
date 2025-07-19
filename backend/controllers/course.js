@@ -67,7 +67,7 @@ exports.createCourse = async (req, res) => {
         console.log('Request files:', req.files);
 
         // extract data
-        let { courseName, courseDescription, whatYouWillLearn, price, category, instructions: _instructions, status, tag: _tag } = req.body;
+        let { courseName, courseDescription, whatYouWillLearn, price, category, instructions: _instructions, status, tag: _tag, thumbnailImageUrl } = req.body;
 
         // Handle tag and instructions - they can be either JSON strings or arrays
         let tag = _tag;
@@ -111,7 +111,7 @@ exports.createCourse = async (req, res) => {
         const thumbnail = req.file;
 
         // validation
-        if (!courseName || !courseDescription || !whatYouWillLearn || !price || !category || !thumbnail) {
+        if (!courseName || !courseDescription || !whatYouWillLearn || !price || !category || (!thumbnail && !thumbnailImageUrl)) {
             return res.status(400).json({
                 success: false,
                 message: 'All required fields must be provided (courseName, courseDescription, whatYouWillLearn, price, category, thumbnail)'
@@ -148,15 +148,27 @@ exports.createCourse = async (req, res) => {
             })
         }
 
-        // upload thumbnail to Supabase
-        const thumbnailDetails = await uploadImageToSupabase(thumbnail, 'courses');
-        console.log('✅ Thumbnail uploaded to Supabase:', thumbnailDetails.secure_url);
+        // Handle thumbnail upload
+        let thumbnailDetails;
+        if (thumbnailImageUrl) {
+            // Use direct upload URL
+            console.log('Using direct upload URL for thumbnail:', thumbnailImageUrl);
+            thumbnailDetails = {
+                secure_url: thumbnailImageUrl,
+                public_id: thumbnailImageUrl.split('/').pop(),
+                resource_type: 'image'
+            };
+        } else if (thumbnail) {
+            // Upload via server (fallback)
+            thumbnailDetails = await uploadImageToSupabase(thumbnail, 'courses');
+            console.log('✅ Thumbnail uploaded to Supabase:', thumbnailDetails.secure_url);
 
-        if (!thumbnailDetails || !thumbnailDetails.secure_url) {
-            return res.status(500).json({
-                success: false,
-                message: 'Failed to upload thumbnail image'
-            });
+            if (!thumbnailDetails || !thumbnailDetails.secure_url) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to upload thumbnail image'
+                });
+            }
         }
 
         // create new course - entry in DB

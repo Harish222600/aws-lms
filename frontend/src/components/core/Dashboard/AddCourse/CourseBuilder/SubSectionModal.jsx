@@ -81,16 +81,19 @@ export default function SubSectionModal({ modalData, setModalData, add = false, 
         console.log("Description updated:", currentValues.lectureDesc)
       }
       
-      // Handle video update - check if it's a File object (new upload) or changed URL
+      // Handle video update - support both File objects and direct upload URLs
       if (currentValues.lectureVideo instanceof File) {
+        // Traditional file upload
         formData.append("videoFile", currentValues.lectureVideo)
         console.log("New video file uploaded:", {
           name: currentValues.lectureVideo.name,
           size: currentValues.lectureVideo.size,
           type: currentValues.lectureVideo.type
         })
-      } else if (currentValues.lectureVideo && currentValues.lectureVideo !== modalData.videoUrl) {
-        // This case handles if video URL changed (though unlikely in edit mode)
+      } else if (currentValues.lectureVideo && 
+                 typeof currentValues.lectureVideo === 'string' && 
+                 currentValues.lectureVideo !== modalData.videoUrl) {
+        // Direct upload URL or changed URL
         formData.append("videoUrl", currentValues.lectureVideo)
         console.log("Video URL updated:", currentValues.lectureVideo)
       }
@@ -134,9 +137,24 @@ export default function SubSectionModal({ modalData, setModalData, add = false, 
       return
     }
 
-    // Validate video file - make it optional for creation too
-    if (data.lectureVideo && !(data.lectureVideo instanceof File)) {
-      toast.error("Please upload a valid video file")
+    // Debug logging to see what data we're receiving
+    console.log("🔍 SubSectionModal onSubmit - Raw form data:", {
+      lectureTitle: data.lectureTitle,
+      lectureDesc: data.lectureDesc,
+      lectureVideo: data.lectureVideo,
+      lectureVideoType: typeof data.lectureVideo,
+      lectureVideoIsFile: data.lectureVideo instanceof File,
+      modalData: modalData
+    })
+
+    // Validation check
+    if (!data.lectureTitle || !data.lectureDesc) {
+      toast.error("Title and description are required")
+      return
+    }
+
+    if (!modalData) {
+      toast.error("Section ID is missing")
       return
     }
 
@@ -149,14 +167,26 @@ export default function SubSectionModal({ modalData, setModalData, add = false, 
       formData.append("title", data.lectureTitle)
       formData.append("description", data.lectureDesc)
       
-      // Only append video if one was selected
+      // Handle video - support both File objects (traditional upload) and URLs (direct upload)
       if (data.lectureVideo instanceof File) {
+        // File object - add to FormData for server-side upload
         formData.append("video", data.lectureVideo)
-        console.log("Creating subsection with video:", {
+        console.log("Creating subsection with video file:", {
           name: data.lectureVideo.name,
           size: data.lectureVideo.size,
           type: data.lectureVideo.type
         })
+      } else if (data.lectureVideo && typeof data.lectureVideo === 'string' && data.lectureVideo.startsWith('http')) {
+        // Direct upload URL - already uploaded
+        formData.append("videoUrl", data.lectureVideo)
+        console.log("Creating subsection with direct upload URL:", data.lectureVideo)
+      } else if (data.lectureVideo) {
+        // Handle other video data types
+        console.log("Video data type:", typeof data.lectureVideo, data.lectureVideo)
+        if (data.lectureVideo.startsWith && data.lectureVideo.startsWith('blob:')) {
+          // This is a blob URL, we need the actual file
+          console.warn("Received blob URL instead of File object or HTTP URL")
+        }
       } else {
         console.log("Creating subsection without video")
       }
@@ -167,6 +197,19 @@ export default function SubSectionModal({ modalData, setModalData, add = false, 
         console.log(key, value instanceof File ? `File: ${value.name}` : value)
       }
 
+      // Additional validation before API call
+      if (!formData.get('sectionId') || !formData.get('title') || !formData.get('description')) {
+        console.error('❌ FormData validation failed:', {
+          sectionId: formData.get('sectionId'),
+          title: formData.get('title'),
+          description: formData.get('description')
+        })
+        toast.error('Form data is incomplete. Please check all fields.')
+        return
+      }
+
+      console.log('🚀 About to call createSubSection API...')
+
       // Create subsection with timeout
       const timeoutDuration = 300000 // 5 minutes
       
@@ -176,6 +219,8 @@ export default function SubSectionModal({ modalData, setModalData, add = false, 
           setTimeout(() => reject(new Error('Upload timeout')), timeoutDuration)
         )
       ])
+
+      console.log('✅ createSubSection API call completed:', subsectionResult)
 
       if (subsectionResult) {
         // Update course structure

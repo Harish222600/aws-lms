@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { FiUploadCloud } from "react-icons/fi"
 import { useSelector } from "react-redux"
-
-// Removed video-react to eliminate legacy context API warning
+import { uploadFile, ResumableUploader } from "../../../../utils/directUpload"
+import VideoUploadProgress from "../../../common/VideoUploadProgress"
 
 
 
@@ -15,6 +15,14 @@ export default function Upload({ name, label, register, setValue, errors, video 
   const [previewError, setPreviewError] = useState(null)
   const inputRef = useRef(null)
   const videoRef = useRef(null)
+  
+  // Upload state management
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadError, setUploadError] = useState(null)
+  const [uploadResult, setUploadResult] = useState(null)
+  const [uploader, setUploader] = useState(null)
+  const [uploadStatus, setUploadStatus] = useState('idle') // 'idle', 'uploading', 'completed', 'error', 'cancelled'
 
   const onDrop = (acceptedFiles) => {
     const file = acceptedFiles[0]
@@ -24,8 +32,145 @@ export default function Upload({ name, label, register, setValue, errors, video 
         type: file.type,
         size: file.size
       })
+      
+      // Reset upload state
+      resetUploadState()
+      
       previewFile(file)
       setSelectedFile(file)
+      
+      // For videos, don't auto-upload - wait for batch save
+      // For images, still auto-upload
+      if (!video) {
+        // Images still upload immediately
+        startUpload(file)
+      } else {
+        // Videos are stored as File objects for batch upload later
+        setValue(name, file)
+        console.log('📁 Video file stored for batch upload:', file.name)
+      }
+    }
+  }
+
+  // Reset upload state
+  const resetUploadState = () => {
+    setIsUploading(false)
+    setUploadProgress(0)
+    setUploadError(null)
+    setUploadResult(null)
+    setUploadStatus('idle')
+    if (uploader) {
+      uploader.cancel()
+      setUploader(null)
+    }
+  }
+
+  // Start file upload
+  const startUpload = async (file) => {
+    try {
+      console.log('🚀 Starting upload for:', file.name)
+      setIsUploading(true)
+      setUploadStatus('uploading')
+      setUploadError(null)
+      
+      const folder = video ? 'videos' : 'images'
+      
+      // Check if we need resumable upload
+      const needsResumableUpload = file.size > 50 * 1024 * 1024 // 50MB
+      
+      if (needsResumableUpload) {
+        console.log('📦 Using resumable upload for large file')
+        
+        const resumableUploader = new ResumableUploader(file, folder, {
+          onProgress: (progressData) => {
+            setUploadProgress(progressData.progress)
+            console.log('Upload progress:', progressData)
+          },
+          onError: (error) => {
+            console.error('Upload error:', error)
+            setUploadError(error.message)
+            setUploadStatus('error')
+            setIsUploading(false)
+          },
+          onComplete: (result) => {
+            console.log('Upload completed:', result)
+            setUploadResult(result)
+            setUploadStatus('completed')
+            setIsUploading(false)
+            setUploadProgress(100)
+            
+            // Set the result URL in the form
+            setValue(name, result.secure_url)
+          }
+        })
+        
+        setUploader(resumableUploader)
+        await resumableUploader.start()
+        
+      } else {
+        console.log('🚀 Using direct upload for small file')
+        
+        const result = await uploadFile(file, folder, {
+          onProgress: (progressData) => {
+            if (progressData) {
+              setUploadProgress(progressData.progress || 50) // Fallback progress for direct uploads
+            }
+          }
+        })
+        
+        console.log('✅ Direct upload completed:', result)
+        setUploadResult(result)
+        setUploadStatus('completed')
+        setIsUploading(false)
+        setUploadProgress(100)
+        
+        // Set the result URL in the form
+        setValue(name, result.secure_url)
+      }
+      
+    } catch (error) {
+      console.error('❌ Upload failed:', error)
+      setUploadError(error.message)
+      setUploadStatus('error')
+      setIsUploading(false)
+    }
+  }
+
+  // Handle upload pause
+  const pauseUpload = () => {
+    if (uploader && uploader.pause) {
+      uploader.pause()
+      setUploadStatus('paused')
+    }
+  }
+
+  // Handle upload resume
+  const resumeUpload = async () => {
+    if (uploader && uploader.resume) {
+      try {
+        setUploadStatus('uploading')
+        await uploader.resume()
+      } catch (error) {
+        console.error('Resume failed:', error)
+        setUploadError(error.message)
+        setUploadStatus('error')
+      }
+    }
+  }
+
+  // Handle upload cancellation
+  const cancelUpload = async () => {
+    if (uploader && uploader.cancel) {
+      await uploader.cancel()
+    }
+    resetUploadState()
+    setUploadStatus('cancelled')
+  }
+
+  // Handle upload retry
+  const retryUpload = () => {
+    if (selectedFile) {
+      startUpload(selectedFile)
     }
   }
 
@@ -126,7 +271,8 @@ export default function Upload({ name, label, register, setValue, errors, video 
   }, [register, video])
 
   useEffect(() => {
-    if (selectedFile) {
+    if (selectedFile && !video) {
+      // For images, set the file object directly (will be uploaded on form submission)
       setValue(name, selectedFile)
       if (setImageFile) {
         setImageFile(selectedFile)
@@ -136,8 +282,12 @@ export default function Upload({ name, label, register, setValue, errors, video 
         type: selectedFile.type,
         size: selectedFile.size
       })
+    } else if (uploadResult && video) {
+      // For videos, set the uploaded URL
+      setValue(name, uploadResult.secure_url)
+      console.log("Upload result URL set in form:", uploadResult.secure_url)
     }
-  }, [selectedFile, setValue, name, setImageFile])
+  }, [selectedFile, uploadResult, setValue, name, setImageFile, video])
 
   // Handle initial video URL validation for edit/view mode
   useEffect(() => {
@@ -359,22 +509,35 @@ export default function Upload({ name, label, register, setValue, errors, video 
             )}
 
             {!viewData && (
-              <button
-                type="button"
-                onClick={() => {
-                  // Clean up object URL if it exists
-                  if (previewSource && previewSource.startsWith('blob:')) {
-                    URL.revokeObjectURL(previewSource)
-                  }
-                  setPreviewSource("")
-                  setSelectedFile(null)
-                  setPreviewError(null)
-                  setValue(name, null)
-                }}
-                className="mt-3 text-sm font-medium text-richblack-400 underline hover:text-yellow-50"
-              >
-                {selectedFile ? 'Remove' : 'Replace'} {video ? "Video" : "Image"}
-              </button>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Clean up object URL if it exists
+                    if (previewSource && previewSource.startsWith('blob:')) {
+                      URL.revokeObjectURL(previewSource)
+                    }
+                    setPreviewSource("")
+                    setSelectedFile(null)
+                    setPreviewError(null)
+                    setValue(name, null)
+                    resetUploadState()
+                  }}
+                  className="text-sm font-medium text-richblack-400 underline hover:text-yellow-50"
+                >
+                  {selectedFile ? 'Remove' : 'Replace'} {video ? "Video" : "Image"}
+                </button>
+                
+                {video && uploadStatus === 'error' && (
+                  <button
+                    type="button"
+                    onClick={retryUpload}
+                    className="text-sm font-medium text-blue-400 underline hover:text-blue-300"
+                  >
+                    Retry Upload
+                  </button>
+                )}
+              </div>
             )}
           </div>
         ) : (
@@ -411,7 +574,10 @@ export default function Upload({ name, label, register, setValue, errors, video 
                     <span>•</span> Formats: MP4, MOV, AVI, MKV, WebM
                   </li>
                   <li className="flex items-center gap-1">
-                    <span>•</span> No size limit
+                    <span>•</span> No size limit - Direct upload to cloud storage
+                  </li>
+                  <li className="flex items-center gap-1">
+                    <span>•</span> Large files use resumable upload
                   </li>
                 </>
               ) : (
@@ -428,6 +594,64 @@ export default function Upload({ name, label, register, setValue, errors, video 
           </div>
         )}
       </div>
+
+      {/* Upload Progress for Videos */}
+      {video && isUploading && (
+        <div className="mt-4">
+          <VideoUploadProgress
+            progress={uploadProgress}
+            fileName={selectedFile?.name || ''}
+            fileSize={selectedFile?.size || 0}
+            status={uploadStatus}
+            onCancel={cancelUpload}
+            onPause={pauseUpload}
+            onResume={resumeUpload}
+            error={uploadError}
+            isChunked={uploader !== null}
+            currentChunk={uploader ? uploader.uploadedChunks?.size || 0 : 0}
+            totalChunks={uploader ? uploader.totalChunks || 0 : 0}
+            uploadType={uploader ? 'resumable' : 'direct'}
+          />
+        </div>
+      )}
+
+      {/* Upload Status Messages */}
+      {video && selectedFile && !isUploading && (
+        <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+          <p className="text-sm text-blue-400 flex items-center gap-2">
+            <span>📁</span>
+            Video selected: {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+          </p>
+          <p className="text-xs text-blue-300 mt-1">
+            Video will be uploaded when you click "Save All Changes"
+          </p>
+        </div>
+      )}
+
+      {video && uploadStatus === 'completed' && uploadResult && (
+        <div className="mt-4 p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
+          <p className="text-sm text-green-400 flex items-center gap-2">
+            <span>✅</span>
+            Video uploaded successfully! Ready to save course.
+          </p>
+        </div>
+      )}
+
+      {video && uploadStatus === 'error' && uploadError && (
+        <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+          <p className="text-sm text-red-400 flex items-center gap-2">
+            <span>❌</span>
+            Upload failed: {uploadError}
+          </p>
+          <button
+            type="button"
+            onClick={retryUpload}
+            className="mt-2 text-sm text-blue-400 underline hover:text-blue-300"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
 
       {errors[name] && (
         <span className="flex items-center text-xs text-pink-200">

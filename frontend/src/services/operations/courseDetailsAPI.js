@@ -94,7 +94,26 @@ export const addCourseDetails = async (data, token) => {
   let result = null;
 
   try {
-    const response = await apiConnector("POST", CREATE_COURSE_API, data, {
+    // Check if thumbnailImage is a File object (needs upload) or URL string (already uploaded)
+    const formData = new FormData()
+    
+    // Add all form fields
+    Object.keys(data).forEach(key => {
+      if (key === 'thumbnailImage') {
+        // Handle thumbnail image
+        if (data[key] instanceof File) {
+          // File object - add to FormData for server-side upload
+          formData.append(key, data[key])
+        } else if (typeof data[key] === 'string' && data[key].startsWith('http')) {
+          // URL string - already uploaded via direct upload
+          formData.append('thumbnailImageUrl', data[key])
+        }
+      } else {
+        formData.append(key, data[key])
+      }
+    })
+
+    const response = await apiConnector("POST", CREATE_COURSE_API, formData, {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
     })
@@ -154,14 +173,29 @@ export const createSection = async (data, token) => {
     console.log("CREATE SECTION API RESPONSE............", response)
 
     if (!response?.data?.success) {
-      throw new Error("Could Not Create Section")
+      throw new Error(response?.data?.message || "Could Not Create Section")
     }
 
     result = response?.data?.updatedCourseDetails
     toast.success("Course Section Created")
   } catch (error) {
     console.log("CREATE SECTION API ERROR............", error)
-    toast.error(error.message)
+    
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      toast.error("Authentication failed. Please login again.")
+    } else if (error.response?.status === 403) {
+      toast.error("You don't have permission to create sections in this course.")
+    } else if (error.response?.status === 404) {
+      toast.error("Course not found.")
+    } else if (error.response?.data?.message) {
+      toast.error(error.response.data.message)
+    } else {
+      toast.error(error.message || "Could Not Create Section")
+    }
+    
+    // Re-throw error for proper handling in calling function
+    throw error
   }
   toast.dismiss(toastId)
   return result
@@ -174,7 +208,26 @@ export const createSubSection = async (data, token) => {
   const toastId = toast.loading("Loading...")
 
   try {
-    const response = await apiConnector("POST", CREATE_SUBSECTION_API, data, {
+    // Handle video upload - check if it's a File object or URL string
+    const formData = new FormData()
+    
+    // Add all form fields
+    Object.keys(data).forEach(key => {
+      if (key === 'video') {
+        // Handle video file
+        if (data[key] instanceof File) {
+          // File object - add to FormData for server-side upload
+          formData.append(key, data[key])
+        } else if (typeof data[key] === 'string' && data[key].startsWith('http')) {
+          // URL string - already uploaded via direct upload
+          formData.append('videoUrl', data[key])
+        }
+      } else {
+        formData.append(key, data[key])
+      }
+    })
+
+    const response = await apiConnector("POST", CREATE_SUBSECTION_API, formData, {
       Authorization: `Bearer ${token}`,
       "Content-Type": "multipart/form-data",
     })
@@ -185,6 +238,7 @@ export const createSubSection = async (data, token) => {
     }
 
     result = response?.data?.data
+    toast.success("Lecture Added Successfully")
     
   } catch (error) {
     console.log("CREATE SUB-SECTION API ERROR............", error)
@@ -217,14 +271,29 @@ export const updateSection = async (data, token) => {
     console.log("UPDATE SECTION API RESPONSE............", response)
 
     if (!response?.data?.success) {
-      throw new Error("Could Not Update Section")
+      throw new Error(response?.data?.message || "Could Not Update Section")
     }
 
     result = response?.data?.data
     toast.success("Course Section Updated")
   } catch (error) {
     console.log("UPDATE SECTION API ERROR............", error)
-    toast.error(error.message)
+    
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      toast.error("Authentication failed. Please login again.")
+    } else if (error.response?.status === 403) {
+      toast.error("You don't have permission to update this section.")
+    } else if (error.response?.status === 404) {
+      toast.error("Section not found.")
+    } else if (error.response?.data?.message) {
+      toast.error(error.response.data.message)
+    } else {
+      toast.error(error.message || "Could Not Update Section")
+    }
+    
+    // Re-throw error for proper handling in calling function
+    throw error
   }
   toast.dismiss(toastId)
   return result
@@ -237,7 +306,26 @@ export const updateSubSection = async (data, token) => {
   const toastId = toast.loading("Loading...")
 
   try {
-    const response = await apiConnector("POST", UPDATE_SUBSECTION_API, data, {
+    // Handle video upload - check if it's a File object or URL string
+    const formData = new FormData()
+    
+    // Add all form fields
+    Object.keys(data).forEach(key => {
+      if (key === 'videoFile') {
+        // Handle video file
+        if (data[key] instanceof File) {
+          // File object - add to FormData for server-side upload
+          formData.append(key, data[key])
+        } else if (typeof data[key] === 'string' && data[key].startsWith('http')) {
+          // URL string - already uploaded via direct upload
+          formData.append('videoUrl', data[key])
+        }
+      } else {
+        formData.append(key, data[key])
+      }
+    })
+
+    const response = await apiConnector("POST", UPDATE_SUBSECTION_API, formData, {
       Authorization: `Bearer ${token}`,
       "Content-Type": "multipart/form-data",
     })
@@ -280,14 +368,29 @@ export const deleteSection = async (data, token) => {
     console.log("DELETE SECTION API RESPONSE............", response)
 
     if (!response?.data?.success) {
-      throw new Error("Could Not Delete Section")
+      throw new Error(response?.data?.message || "Could Not Delete Section")
     }
 
     result = response?.data?.data
     toast.success("Course Section Deleted")
   } catch (error) {
     console.log("DELETE SECTION API ERROR............", error)
-    toast.error(error.message)
+    
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      toast.error("Authentication failed. Please login again.")
+    } else if (error.response?.status === 403) {
+      toast.error("You don't have permission to delete this section.")
+    } else if (error.response?.status === 404) {
+      toast.error("Section not found.")
+    } else if (error.response?.data?.message) {
+      toast.error(error.response.data.message)
+    } else {
+      toast.error(error.message || "Could Not Delete Section")
+    }
+    
+    // Re-throw error for proper handling in calling function
+    throw error
   }
   toast.dismiss(toastId)
   return result
@@ -321,6 +424,9 @@ export const deleteSubSection = async (data, token) => {
     } else {
       toast.error(error.message || "Could Not Delete Lecture")
     }
+    
+    // Re-throw error for proper handling in calling function
+    throw error
   }
   toast.dismiss(toastId)
   return result

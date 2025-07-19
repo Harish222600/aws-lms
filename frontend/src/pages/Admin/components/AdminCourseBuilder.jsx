@@ -224,40 +224,74 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
   const saveAllChanges = async () => {
     setIsSavingAll(true)
     
-    
     try {
-      // Process all changes sequentially
-      let updatedContent = [...originalCourseData.courseContent]
+      console.log("🔄 Starting save all changes process...")
+      let hasErrors = false
+      let errorMessages = []
 
       // 1. Handle new sections
       for (const section of courseData.courseContent) {
         if (section.isNew) {
-          const result = await createSection({
-            sectionName: section.sectionName,
-            courseId: courseData._id,
-          }, token)
-          
-          if (result && result.courseContent) {
-            // Find the newly created section from the updated course content
-            const newSection = result.courseContent.find(s => s.sectionName === section.sectionName)
-            if (newSection) {
-              // Handle new subsections in this new section
-              for (const subSection of section.subSection) {
-                if (subSection.isNew) {
-                  const formData = new FormData()
-                  formData.append("sectionId", newSection._id)
-                  formData.append("title", subSection.title)
-                  formData.append("description", subSection.description)
-                  if (subSection.videoFile) {
-                    formData.append("video", subSection.videoFile)
+          try {
+            console.log("Creating new section:", section.sectionName)
+            const result = await createSection({
+              sectionName: section.sectionName,
+              courseId: courseData._id,
+            }, token)
+            
+            console.log("Section creation result:", result)
+            
+            if (result && result.updatedCourseDetails) {
+              // Find the newly created section from the updated course content
+              const newSection = result.updatedCourseDetails.courseContent.find(s => s.sectionName === section.sectionName)
+              if (newSection) {
+                // Handle new subsections in this new section
+                for (const subSection of section.subSection) {
+                  if (subSection.isNew) {
+                    try {
+                      console.log("Creating new subsection in new section:", {
+                        sectionId: newSection._id,
+                        title: subSection.title,
+                        description: subSection.description,
+                        hasVideoFile: !!subSection.videoFile,
+                        hasVideoUrlDirect: !!subSection.videoUrlDirect
+                      })
+                      
+                      // Prepare data object for createSubSection
+                      const subSectionData = {
+                        sectionId: newSection._id,
+                        title: subSection.title,
+                        description: subSection.description
+                      }
+                      
+                      // Handle video - either file or direct URL
+                      if (subSection.videoFile) {
+                        console.log("🚀 Adding video file for upload:", subSection.videoFile.name)
+                        subSectionData.video = subSection.videoFile
+                      } else if (subSection.videoUrlDirect) {
+                        console.log("Using existing video URL:", subSection.videoUrlDirect)
+                        subSectionData.video = subSection.videoUrlDirect
+                      }
+                      
+                      if (subSection.quiz) {
+                        subSectionData.quiz = subSection.quiz._id || subSection.quiz
+                      }
+                      
+                      const subSectionResult = await createSubSection(subSectionData, token)
+                      console.log("Subsection creation result:", subSectionResult)
+                    } catch (subError) {
+                      console.error("Error creating subsection in new section:", subError)
+                      hasErrors = true
+                      errorMessages.push(`Failed to create lecture "${subSection.title}": ${subError.message}`)
+                    }
                   }
-                  if (subSection.quiz) {
-                    formData.append("quiz", subSection.quiz._id || subSection.quiz)
-                  }
-                  await createSubSection(formData, token)
                 }
               }
             }
+          } catch (sectionError) {
+            console.error("Error creating section:", sectionError)
+            hasErrors = true
+            errorMessages.push(`Failed to create section "${section.sectionName}": ${sectionError.message}`)
           }
         }
       }
@@ -267,42 +301,98 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
         if (!section.isNew) {
           const originalSection = originalCourseData.courseContent.find(s => s._id === section._id)
           if (originalSection && originalSection.sectionName !== section.sectionName) {
-            await updateSection({
-              sectionName: section.sectionName,
-              sectionId: section._id,
-              courseId: courseData._id,
-            }, token)
+            try {
+              console.log("Updating section name:", section.sectionName)
+              await updateSection({
+                sectionName: section.sectionName,
+                sectionId: section._id,
+                courseId: courseData._id,
+              }, token)
+            } catch (updateError) {
+              console.error("Error updating section:", updateError)
+              hasErrors = true
+              errorMessages.push(`Failed to update section "${section.sectionName}": ${updateError.message}`)
+            }
           }
           
           // Handle subsection changes in existing sections
           for (const subSection of section.subSection) {
             if (subSection.isNew) {
-              // New subsection in existing section
-              const formData = new FormData()
-              formData.append("sectionId", section._id)
-              formData.append("title", subSection.title)
-              formData.append("description", subSection.description)
-              if (subSection.videoFile) {
-                formData.append("video", subSection.videoFile)
+              try {
+                console.log("Creating new subsection in existing section:", {
+                  sectionId: section._id,
+                  title: subSection.title,
+                  description: subSection.description,
+                  hasVideoFile: !!subSection.videoFile,
+                  hasVideoUrlDirect: !!subSection.videoUrlDirect
+                })
+                
+                // Prepare data object for createSubSection
+                const subSectionData = {
+                  sectionId: section._id,
+                  title: subSection.title,
+                  description: subSection.description
+                }
+                
+                // Handle video - either file or direct URL
+                if (subSection.videoFile) {
+                  console.log("🚀 Adding video file for upload:", subSection.videoFile.name)
+                  subSectionData.video = subSection.videoFile
+                } else if (subSection.videoUrlDirect) {
+                  console.log("Using existing video URL:", subSection.videoUrlDirect)
+                  subSectionData.video = subSection.videoUrlDirect
+                }
+                
+                if (subSection.quiz) {
+                  subSectionData.quiz = subSection.quiz._id || subSection.quiz
+                }
+                
+                const subSectionResult = await createSubSection(subSectionData, token)
+                console.log("Subsection creation result:", subSectionResult)
+              } catch (subError) {
+                console.error("Error creating subsection:", subError)
+                hasErrors = true
+                errorMessages.push(`Failed to create lecture "${subSection.title}": ${subError.message}`)
               }
-              if (subSection.quiz) {
-                formData.append("quiz", subSection.quiz._id || subSection.quiz)
-              }
-              await createSubSection(formData, token)
             } else if (subSection.isModified) {
-              // Update modified subsection
-              const formData = new FormData()
-              formData.append("sectionId", section._id)
-              formData.append("subSectionId", subSection._id)
-              formData.append("title", subSection.title)
-              formData.append("description", subSection.description)
-              if (subSection.videoFile) {
-                formData.append("videoFile", subSection.videoFile)
+              try {
+                console.log("Updating subsection:", {
+                  sectionId: section._id,
+                  subSectionId: subSection._id,
+                  title: subSection.title,
+                  description: subSection.description,
+                  hasVideoFile: !!subSection.videoFile,
+                  hasVideoUrlDirect: !!subSection.videoUrlDirect
+                })
+                
+                // Prepare data object for updateSubSection
+                const updateData = {
+                  sectionId: section._id,
+                  subSectionId: subSection._id,
+                  title: subSection.title,
+                  description: subSection.description
+                }
+                
+                // Handle video - either file or direct URL
+                if (subSection.videoFile) {
+                  console.log("🚀 Adding video file for update:", subSection.videoFile.name)
+                  updateData.videoFile = subSection.videoFile
+                } else if (subSection.videoUrlDirect) {
+                  console.log("Using existing video URL:", subSection.videoUrlDirect)
+                  updateData.videoFile = subSection.videoUrlDirect
+                }
+                
+                if (subSection.quiz) {
+                  updateData.quiz = subSection.quiz._id || subSection.quiz
+                }
+                
+                const updateResult = await updateSubSection(updateData, token)
+                console.log("Subsection update result:", updateResult)
+              } catch (updateError) {
+                console.error("Error updating subsection:", updateError)
+                hasErrors = true
+                errorMessages.push(`Failed to update lecture "${subSection.title}": ${updateError.message}`)
               }
-              if (subSection.quiz) {
-                formData.append("quiz", subSection.quiz._id || subSection.quiz)
-              }
-              await updateSubSection(formData, token)
             }
           }
         }
@@ -312,10 +402,17 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
       for (const originalSection of originalCourseData.courseContent) {
         const stillExists = courseData.courseContent.find(s => s._id === originalSection._id)
         if (!stillExists) {
-          await deleteSection({
-            sectionId: originalSection._id,
-            courseId: courseData._id,
-          }, token)
+          try {
+            console.log("Deleting section:", originalSection.sectionName)
+            await deleteSection({
+              sectionId: originalSection._id,
+              courseId: courseData._id,
+            }, token)
+          } catch (deleteError) {
+            console.error("Error deleting section:", deleteError)
+            hasErrors = true
+            errorMessages.push(`Failed to delete section "${originalSection.sectionName}": ${deleteError.message}`)
+          }
         }
       }
 
@@ -326,31 +423,72 @@ export default function AdminCourseBuilder({ course, onCourseUpdate }) {
           for (const originalSubSection of originalSection.subSection || []) {
             const stillExists = currentSection.subSection.find(s => s._id === originalSubSection._id)
             if (!stillExists) {
-              await deleteSubSection({
-                subSectionId: originalSubSection._id,
-                sectionId: originalSection._id,
-              }, token)
+              try {
+                console.log("Deleting subsection:", originalSubSection.title)
+                await deleteSubSection({
+                  subSectionId: originalSubSection._id,
+                  sectionId: originalSection._id,
+                }, token)
+              } catch (deleteError) {
+                console.error("Error deleting subsection:", deleteError)
+                hasErrors = true
+                errorMessages.push(`Failed to delete lecture "${originalSubSection.title}": ${deleteError.message}`)
+              }
             }
           }
         }
       }
 
       // Refresh course data
-      const result = await getFullDetailsOfCourse(courseData._id, token)
-      if (result) {
-        setCourseData(result)
-        setOriginalCourseData(JSON.parse(JSON.stringify(result)))
-        onCourseUpdate(result)
-        setHasUnsavedChanges(false)
-        toast.success("All changes saved successfully!")
+      console.log("🔄 Refreshing course data...")
+      try {
+        const result = await getFullDetailsOfCourse(courseData._id, token)
+        console.log("Full course details result:", result)
+        
+        if (result) {
+          // Handle different response structures
+          let refreshedCourseData;
+          if (result.data && result.data.courseDetails) {
+            refreshedCourseData = result.data.courseDetails;
+          } else if (result.courseDetails) {
+            refreshedCourseData = result.courseDetails;
+          } else if (result.data) {
+            refreshedCourseData = result.data;
+          } else {
+            refreshedCourseData = result;
+          }
+          
+          console.log("Processed refreshed course data:", refreshedCourseData)
+          
+          if (refreshedCourseData && refreshedCourseData._id) {
+            setCourseData(refreshedCourseData)
+            setOriginalCourseData(JSON.parse(JSON.stringify(refreshedCourseData)))
+            onCourseUpdate(refreshedCourseData)
+            setHasUnsavedChanges(false)
+            
+            if (hasErrors) {
+              toast.error(`Some changes failed to save:\n${errorMessages.join('\n')}`)
+            } else {
+              toast.success("All changes saved successfully!")
+            }
+          } else {
+            console.error("Invalid course data structure after refresh:", refreshedCourseData)
+            toast.error("Changes saved but failed to refresh course data. Please reload the page.")
+          }
+        } else {
+          console.error("No result from getFullDetailsOfCourse")
+          toast.error("Changes may have been saved but failed to refresh course data. Please reload the page.")
+        }
+      } catch (refreshError) {
+        console.error("Error refreshing course data:", refreshError)
+        toast.error("Changes may have been saved but failed to refresh course data. Please reload the page.")
       }
 
     } catch (error) {
-      console.error("Error saving changes:", error)
-      toast.error("Failed to save some changes. Please try again.")
+      console.error("Critical error in saveAllChanges:", error)
+      toast.error("Failed to save changes. Please try again.")
     } finally {
       setIsSavingAll(false)
-      
     }
   }
 

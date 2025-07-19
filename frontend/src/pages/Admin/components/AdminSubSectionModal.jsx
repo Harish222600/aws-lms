@@ -41,15 +41,19 @@ export default function AdminSubSectionModal({
   // detect whether form is updated or not
   const isFormUpdated = () => {
     const currentValues = getValues()
-    if (
-      currentValues.lectureTitle !== modalData.title ||
-      currentValues.lectureDesc !== modalData.description ||
-      currentValues.lectureVideo !== modalData.videoUrl ||
-      currentValues.quiz !== (modalData.quiz?._id || "")
-    ) {
-      return true
-    }
-    return false
+    
+    // Check if title or description changed
+    const titleChanged = currentValues.lectureTitle !== modalData.title
+    const descChanged = currentValues.lectureDesc !== modalData.description
+    const quizChanged = currentValues.quiz !== (modalData.quiz?._id || "")
+    
+    // Check if video changed - compare File object vs URL string
+    const videoChanged = currentValues.lectureVideo instanceof File || 
+                        (currentValues.lectureVideo && 
+                         typeof currentValues.lectureVideo === 'string' && 
+                         currentValues.lectureVideo !== modalData.videoUrl)
+    
+    return titleChanged || descChanged || videoChanged || quizChanged
   }
 
   // handle the editing of subsection - only update local state, not database
@@ -62,11 +66,13 @@ export default function AdminSubSectionModal({
       title: currentValues.lectureTitle,
       description: currentValues.lectureDesc,
       quiz: currentValues.quiz ? { _id: currentValues.quiz } : null,
-      // Keep existing video URL if no new video is uploaded
+      // Handle video URL - support both File objects and direct upload URLs
       videoUrl: currentValues.lectureVideo instanceof File ? 
-        URL.createObjectURL(currentValues.lectureVideo) : modalData.videoUrl,
-      // Store the video file for batch save
+        URL.createObjectURL(currentValues.lectureVideo) : 
+        (typeof currentValues.lectureVideo === 'string' ? currentValues.lectureVideo : modalData.videoUrl),
+      // Store the video file or URL for batch save
       videoFile: currentValues.lectureVideo instanceof File ? currentValues.lectureVideo : null,
+      videoUrlDirect: typeof currentValues.lectureVideo === 'string' ? currentValues.lectureVideo : null,
       // Mark as modified for batch save
       isModified: true
     }
@@ -91,16 +97,42 @@ export default function AdminSubSectionModal({
 
     // File size validation removed - unlimited video upload size allowed
 
+    // Debug the form data first
+    console.log("AdminSubSectionModal - Form data received:", {
+      lectureTitle: data.lectureTitle,
+      lectureDesc: data.lectureDesc,
+      lectureVideo: data.lectureVideo,
+      lectureVideoType: typeof data.lectureVideo,
+      lectureVideoIsFile: data.lectureVideo instanceof File,
+      lectureVideoIsString: typeof data.lectureVideo === 'string',
+      lectureVideoValue: data.lectureVideo
+    })
+
     // For new lectures, only update local state (don't save to database)
     const newSubSection = {
       title: data.lectureTitle,
       description: data.lectureDesc,
       quiz: data.quiz ? { _id: data.quiz } : null,
+      // Handle video URL - support both File objects and direct upload URLs
       videoUrl: data.lectureVideo instanceof File ? 
-        URL.createObjectURL(data.lectureVideo) : null,
+        URL.createObjectURL(data.lectureVideo) : 
+        (typeof data.lectureVideo === 'string' ? data.lectureVideo : null),
+      // Store the video file or URL for batch save
       videoFile: data.lectureVideo instanceof File ? data.lectureVideo : null,
+      videoUrlDirect: typeof data.lectureVideo === 'string' ? data.lectureVideo : null,
       isNew: true
     }
+    
+    // Debug logging
+    console.log("AdminSubSectionModal - Creating new subsection:", {
+      title: newSubSection.title,
+      description: newSubSection.description,
+      hasVideoFile: !!newSubSection.videoFile,
+      hasVideoUrlDirect: !!newSubSection.videoUrlDirect,
+      videoUrlDirect: newSubSection.videoUrlDirect,
+      originalVideoData: data.lectureVideo,
+      videoType: typeof data.lectureVideo
+    })
     
     onUpdate(newSubSection)
     setModalData(null)

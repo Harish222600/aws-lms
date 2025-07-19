@@ -30,7 +30,7 @@ const getSuggestionForError = (statusCode, fileSize) => {
 // ================ Update SubSection ================
 exports.updateSubSection = async (req, res) => {
     try {
-        const { sectionId, subSectionId, title, description, questions } = req.body;
+        const { sectionId, subSectionId, title, description, questions, videoUrl } = req.body;
 
         // validation
         if (!subSectionId) {
@@ -59,8 +59,13 @@ exports.updateSubSection = async (req, res) => {
             subSection.description = description;
         }
 
-        // upload video to Supabase
-        if (req.file) {
+        // Handle video upload
+        if (videoUrl) {
+            // Use direct upload URL
+            console.log('Using direct upload URL for video (update):', videoUrl);
+            subSection.videoUrl = videoUrl;
+            subSection.timeDuration = 0; // Duration will be extracted later if needed
+        } else if (req.file) {
             try {
                 const video = req.file;
                 console.log('Uploading video file (update):', video.originalname);
@@ -229,18 +234,38 @@ exports.updateSubSection = async (req, res) => {
 exports.createSubSection = async (req, res) => {
     try {
         // extract data
-        const { title, description, sectionId, questions } = req.body;
+        const { title, description, sectionId, questions, videoUrl } = req.body;
 
-        // extract video file - handle both single file and files array
-        const videoFile = req.files?.videoFile?.[0] || req.file;
-        console.log('req.files:', req.files);
-        console.log('req.file:', req.file);
+        // Debug logging
+        console.log('📝 CREATE SUBSECTION - Request body:', req.body);
+        console.log('📝 CREATE SUBSECTION - Request file:', req.file);
+
+        // extract video file - multer.single('video') puts file in req.file
+        const videoFile = req.file;
+        console.log('📝 CREATE SUBSECTION - Final videoFile:', videoFile ? {
+            fieldname: videoFile.fieldname,
+            originalname: videoFile.originalname,
+            size: videoFile.size
+        } : 'No video file found');
+        console.log('📝 CREATE SUBSECTION - videoUrl:', videoUrl);
 
         // validation
         if (!title || !description || !sectionId) {
+            console.error('❌ VALIDATION FAILED:', {
+                title: title || 'MISSING',
+                description: description || 'MISSING',
+                sectionId: sectionId || 'MISSING',
+                videoUrl: videoUrl || 'MISSING'
+            });
             return res.status(400).json({
                 success: false,
-                message: 'Title, description, and sectionId are required'
+                message: 'Title, description, and sectionId are required',
+                received: {
+                    title: title || null,
+                    description: description || null,
+                    sectionId: sectionId || null,
+                    videoUrl: videoUrl || null
+                }
             });
         }
 
@@ -253,10 +278,15 @@ exports.createSubSection = async (req, res) => {
             });
         }
 
-        let videoUrl = '';
+        let finalVideoUrl = '';
         let timeDuration = 0;
 
-        if (videoFile) {
+        if (videoUrl) {
+            // Use direct upload URL
+            console.log('Using direct upload URL for video:', videoUrl);
+            finalVideoUrl = videoUrl;
+            timeDuration = 0; // Duration will be extracted later if needed
+        } else if (videoFile) {
             try {
                 console.log('Starting video upload to Supabase...');
                 console.log('Video file details:', {
@@ -295,7 +325,7 @@ exports.createSubSection = async (req, res) => {
                         uploadMethod: videoFileDetails.size > 50 * 1024 * 1024 ? 'Chunked Upload' : 'Direct Upload'
                     });
                     
-                    videoUrl = videoFileDetails.secure_url;
+                    finalVideoUrl = videoFileDetails.secure_url;
                     // Duration in seconds
                     timeDuration = videoFileDetails.duration || 0;
                     
@@ -372,8 +402,8 @@ exports.createSubSection = async (req, res) => {
                 });
             }
         } else {
-            console.log('No video file provided, creating subsection without video');
-            videoUrl = null; // No video URL when no file is provided
+            console.log('No video file or URL provided, creating subsection without video');
+            finalVideoUrl = null; // No video URL when no file is provided
         }
 
         // create entry in DB
@@ -381,7 +411,7 @@ exports.createSubSection = async (req, res) => {
             title, 
             timeDuration, 
             description, 
-            videoUrl 
+            videoUrl: finalVideoUrl 
         });
 
         // Handle quiz attachment
@@ -428,7 +458,7 @@ exports.createSubSection = async (req, res) => {
                         sectionId,
                         subSectionId: SubSectionDetails._id,
                         title: SubSectionDetails.title,
-                        hasVideo: !!videoUrl
+                        hasVideo: !!finalVideoUrl
                     }
                 );
             } catch (certError) {
