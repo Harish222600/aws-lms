@@ -1,13 +1,15 @@
 import { apiConnector } from "../apiConnector";
 import { toast } from "react-hot-toast";
 
+const BASE_URL = import.meta.env.VITE_APP_BASE_URL;
+
 const RECYCLE_BIN_API = {
-    GET_ITEMS: "/api/v1/recycle-bin",
-    GET_STATS: "/api/v1/recycle-bin/stats",
-    MOVE_TO_BIN: "/api/v1/recycle-bin/move",
-    RESTORE_ITEM: "/api/v1/recycle-bin/restore",
-    PERMANENT_DELETE: "/api/v1/recycle-bin/permanent",
-    CLEANUP_EXPIRED: "/api/v1/recycle-bin/cleanup"
+    GET_ITEMS: BASE_URL + "/api/v1/recycle-bin",
+    GET_STATS: BASE_URL + "/api/v1/recycle-bin/stats",
+    MOVE_TO_BIN: BASE_URL + "/api/v1/recycle-bin/move",
+    RESTORE_ITEM: BASE_URL + "/api/v1/recycle-bin/restore",
+    PERMANENT_DELETE: BASE_URL + "/api/v1/recycle-bin/permanent",
+    CLEANUP_EXPIRED: BASE_URL + "/api/v1/recycle-bin/cleanup"
 };
 
 // Get all recycle bin items
