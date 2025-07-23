@@ -56,17 +56,26 @@ input, textarea, [contenteditable="true"] {
 @layer base {
   html {
     font-size: 90%; /* Scale down base font-size */
+    overflow-x: hidden;
   }
 
   body {
     overflow-x: hidden;
     scroll-behavior: smooth;
+    width: 100%;
+    max-width: 100vw;
   }
 
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+  }
+
+  /* Prevent horizontal overflow */
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   /* Enhanced mobile touch targets */
@@ -373,23 +382,7 @@ button, .btn, .card, .modal {
   }
 }
 
-/* Add top margin to main content to prevent overlap with fixed navbar */
-.w-screen.min-h-screen.bg-richblack-900.flex.flex-col.font-inter {
-  padding-top: 4rem; /* 64px, matching navbar height */
-}
-
-/* Enhanced mobile padding adjustments */
-@media (max-width: 768px) {
-  .w-screen.min-h-screen.bg-richblack-900.flex.flex-col.font-inter {
-    padding-top: 4.5rem; /* 72px for mobile navbar */
-  }
-}
-
-@media (max-width: 640px) {
-  .w-screen.min-h-screen.bg-richblack-900.flex.flex-col.font-inter {
-    padding-top: 5rem; /* 80px for small mobile screens */
-  }
-}
+/* Remove conflicting padding - now handled in App.jsx */
 
 .glass-bg {
   backdrop-filter: blur(6px);

@@ -117,14 +117,14 @@ const ModernNavbar = () => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`fixed top-0 lg:top-2 z-[100] w-full flex items-center justify-center transition-all duration-500 ease-in-out ${
+      className={`fixed top-0 z-[100] w-full flex items-center justify-center transition-all duration-500 ease-in-out ${
         showNavbar === "hide" ? "-translate-y-full" : 
         showNavbar === "show" ? "" : 
         "translate-y-0"
       }`}
     >
       <motion.div 
-        className="w-[98%] xs:w-[95%] lg:w-[90%] max-w-[1000px] mx-auto rounded-lg xs:rounded-xl lg:rounded-[20px] bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-fuchsia-500/20 backdrop-blur-2xl shadow-2xl flex items-center justify-between px-2 xs:px-3 lg:px-6 py-2 xs:py-3 text-white"
+        className="w-full xs:w-[98%] sm:w-[95%] lg:w-[90%] max-w-[1000px] mx-auto xs:rounded-lg sm:rounded-xl lg:rounded-[20px] bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-fuchsia-500/20 backdrop-blur-2xl shadow-2xl flex items-center justify-between px-2 xs:px-3 sm:px-4 lg:px-6 py-2 xs:py-2.5 sm:py-3 text-white"
         style={{
           background: 'linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(139,92,246,0.2) 50%, rgba(217,70,239,0.2) 100%)',
           backdropFilter: 'blur(16px) saturate(180%)',
@@ -145,27 +145,27 @@ const ModernNavbar = () => {
           transition={{ duration: 0.3 }}
           whileHover={{ scale: 1.05 }}
         >
-          <Link to="/" aria-label="Home" className="flex items-center">
+          <Link to="/" aria-label="Home" className="flex items-center gap-1 xs:gap-2">
             <img
               src={beejaLogo}
               width={40}
               height={12}
               loading="lazy"
               alt="Beeja Logo"
-              className="w-[28px] xs:w-[32px] sm:w-[36px] lg:w-[40px] h-auto transition-all duration-300 hover:brightness-110"
+              className="w-[24px] xs:w-[28px] sm:w-[32px] md:w-[36px] lg:w-[40px] h-auto transition-all duration-300 hover:brightness-110"
             />
-            <span className="text-white font-medium text-[10px] xs:text-xs sm:text-sm lg:text-base tracking-wide">
+            <span className="text-white font-medium text-[8px] xs:text-[10px] sm:text-xs md:text-sm lg:text-base tracking-wide hidden xs:block">
               Beeja Academy
             </span>
           </Link>
         </motion.div>
 
         {/* Mobile Right Section - Profile + Menu */}
-        <div className="lg:hidden flex items-center gap-1 xs:gap-2">
+        <div className="lg:hidden flex items-center gap-1 xs:gap-1.5 sm:gap-2">
           {/* Mobile Profile Picture */}
           {token && user && (
             <motion.div 
-              className="relative flex items-center gap-2"
+              className="relative flex items-center gap-1 xs:gap-1.5"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
@@ -174,7 +174,7 @@ const ModernNavbar = () => {
               <motion.img
                 src={user.image}
                 alt={`${user.firstName} ${user.lastName}`}
-                className="h-5 w-5 xs:h-6 xs:w-6 rounded-full object-cover cursor-pointer border border-transparent hover:border-emerald-400 transition-all duration-300"
+                className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6 rounded-full object-cover cursor-pointer border border-transparent hover:border-emerald-400 transition-all duration-300"
                 title={`${user.firstName} ${user.lastName}`}
                 whileHover={{ scale: 1.1, borderColor: "#34d399" }}
                 onClick={toggleMobileMenu}
@@ -187,7 +187,7 @@ const ModernNavbar = () => {
             onClick={toggleMobileMenu}
             aria-label="Toggle menu"
             aria-expanded={mobileMenuOpen}
-            className="flex flex-col h-4 w-4 xs:h-5 xs:w-5 justify-between items-center group relative"
+            className="flex flex-col h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 justify-between items-center group relative"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -195,7 +195,7 @@ const ModernNavbar = () => {
               className="h-0.5 w-full bg-white rounded-lg origin-center"
               animate={{
                 rotate: mobileMenuOpen ? 45 : 0,
-                y: mobileMenuOpen ? 5 : 0,
+                y: mobileMenuOpen ? 4 : 0,
               }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             />
@@ -210,7 +210,7 @@ const ModernNavbar = () => {
               className="h-0.5 w-full bg-white rounded-lg origin-center"
               animate={{
                 rotate: mobileMenuOpen ? -45 : 0,
-                y: mobileMenuOpen ? -5 : 0,
+                y: mobileMenuOpen ? -4 : 0,
               }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             />
@@ -496,13 +496,13 @@ const ModernNavbar = () => {
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div 
-              className="absolute top-full left-0 right-0 z-[91] mx-1 xs:mx-2 mt-1 xs:mt-2 rounded-lg bg-richblack-900/95 backdrop-blur-xl p-2 xs:p-3 lg:hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/10"
+              className="absolute top-full left-0 right-0 z-[91] mx-0 xs:mx-1 sm:mx-2 mt-0 xs:mt-1 sm:mt-2 xs:rounded-lg sm:rounded-lg bg-richblack-900/95 backdrop-blur-xl p-1.5 xs:p-2 sm:p-3 lg:hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/10"
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              <ul className="flex flex-col gap-1 xs:gap-2 text-white">
+              <ul className="flex flex-col gap-0.5 xs:gap-1 sm:gap-2 text-white">
                 {NavbarLinks.map((link, index) => (
                   <motion.li 
                     key={index}
@@ -512,10 +512,10 @@ const ModernNavbar = () => {
                   >
                     {link.title === "Catalog" ? (
                       <details>
-                        <summary className="cursor-pointer rounded-lg p-1.5 xs:p-2 hover:bg-white/10 text-xs xs:text-sm font-medium transition-all duration-300">
+                        <summary className="cursor-pointer rounded-lg p-1 xs:p-1.5 sm:p-2 hover:bg-white/10 text-[10px] xs:text-xs sm:text-sm font-medium transition-all duration-300">
                           Catalog
                         </summary>
-                        <div className="mt-1 flex flex-col gap-1 pl-3 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400" style={{
+                        <div className="mt-0.5 xs:mt-1 flex flex-col gap-0.5 xs:gap-1 pl-2 xs:pl-3 max-h-[150px] xs:max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400" style={{
                           scrollbarWidth: 'thin',
                           scrollbarColor: '#D1D5DB transparent'
                         }}>
