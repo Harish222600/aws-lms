@@ -68,6 +68,24 @@ input, textarea, [contenteditable="true"] {
     padding: 0;
     box-sizing: border-box;
   }
+
+  /* Enhanced mobile touch targets */
+  @media (max-width: 768px) {
+    html {
+      font-size: 85%; /* Further scale down for mobile */
+    }
+    
+    button, .btn, a {
+      min-height: 44px; /* Minimum touch target size */
+      min-width: 44px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    html {
+      font-size: 80%; /* Even smaller for very small screens */
+    }
+  }
 }
 
 /* === UTILITIES === */
@@ -199,20 +217,23 @@ button, .btn, .card, .modal {
   }
 
   .section_heading {
-    @apply text-2xl font-bold text-richblack-5 lg:text-4xl;
+    @apply text-xl font-bold text-richblack-5 sm:text-2xl md:text-3xl lg:text-4xl;
   }
 
   .yellowButton {
-    @apply cursor-pointer rounded-md bg-yellow-50 px-[20px] py-[8px] font-semibold text-richblack-900 hover:bg-black hover:text-yellow-50 duration-300;
+    @apply cursor-pointer rounded-md bg-yellow-50 px-[16px] py-[10px] sm:px-[20px] sm:py-[8px] font-semibold text-richblack-900 hover:bg-black hover:text-yellow-50 duration-300 text-sm sm:text-base;
+    min-height: 44px; /* Touch target */
   }
 
   .blackButton {
-    @apply cursor-pointer rounded-md bg-richblack-800 px-[20px] py-[8px] font-semibold text-richblack-5 hover:bg-richblack-5 hover:text-richblack-800 duration-300;
+    @apply cursor-pointer rounded-md bg-richblack-800 px-[16px] py-[10px] sm:px-[20px] sm:py-[8px] font-semibold text-richblack-5 hover:bg-richblack-5 hover:text-richblack-800 duration-300 text-sm sm:text-base;
+    min-height: 44px; /* Touch target */
   }
 
   .btn-modern {
-    @apply px-6 py-3 rounded-xl font-semibold;
+    @apply px-4 py-3 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base;
     transition: background-color 0.2s ease, opacity 0.2s ease;
+    min-height: 44px; /* Touch target */
   }
 
   .btn-primary {
@@ -240,6 +261,14 @@ button, .btn, .card, .modal {
 
   .btn-danger:hover {
     opacity: 0.9;
+  }
+
+  /* Mobile-specific button styles */
+  @media (max-width: 768px) {
+    .yellowButton, .blackButton, .btn-modern {
+      @apply px-4 py-3 text-sm;
+      min-height: 48px; /* Larger touch target on mobile */
+    }
   }
 }
 
@@ -346,7 +375,20 @@ button, .btn, .card, .modal {
 
 /* Add top margin to main content to prevent overlap with fixed navbar */
 .w-screen.min-h-screen.bg-richblack-900.flex.flex-col.font-inter {
-  padding-top: 3.5rem; /* 56px, matching navbar height */
+  padding-top: 4rem; /* 64px, matching navbar height */
+}
+
+/* Enhanced mobile padding adjustments */
+@media (max-width: 768px) {
+  .w-screen.min-h-screen.bg-richblack-900.flex.flex-col.font-inter {
+    padding-top: 4.5rem; /* 72px for mobile navbar */
+  }
+}
+
+@media (max-width: 640px) {
+  .w-screen.min-h-screen.bg-richblack-900.flex.flex-col.font-inter {
+    padding-top: 5rem; /* 80px for small mobile screens */
+  }
 }
 
 .glass-bg {
