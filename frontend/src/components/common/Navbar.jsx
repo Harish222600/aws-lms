@@ -82,6 +82,7 @@ const ModernNavbar = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileDropdownOpen && !event.target.closest('.profile-dropdown-container')) {
+        console.log('Clicking outside profile dropdown, closing it');
         setProfileDropdownOpen(false);
       }
       if (catalogDropdownOpen && !event.target.closest('.catalog-dropdown-container')) {
@@ -93,6 +94,7 @@ const ModernNavbar = () => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -165,20 +167,75 @@ const ModernNavbar = () => {
           {/* Mobile Profile Picture */}
           {token && user && (
             <motion.div 
-              className="relative flex items-center gap-1 xs:gap-1.5"
+              className="relative flex items-center gap-1 xs:gap-1.5 profile-dropdown-container"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
             >
               <NotificationPanel />
-              <motion.img
-                src={user.image}
-                alt={`${user.firstName} ${user.lastName}`}
-                className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6 rounded-full object-cover cursor-pointer border border-transparent hover:border-emerald-400 transition-all duration-300"
+              <div
+                className="h-4 w-4 xs:h-5 xs:w-5 sm:h-6 sm:w-6 rounded-full cursor-pointer border border-transparent hover:border-emerald-400 transition-all duration-300 overflow-hidden"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Mobile profile clicked, current state:', profileDropdownOpen);
+                  const newState = !profileDropdownOpen;
+                  console.log('Setting mobile profile dropdown to:', newState);
+                  setProfileDropdownOpen(newState);
+                }}
                 title={`${user.firstName} ${user.lastName}`}
-                whileHover={{ scale: 1.1, borderColor: "#34d399" }}
-                onClick={toggleMobileMenu}
-              />
+              >
+                <img
+                  src={user.image}
+                  alt={`${user.firstName} ${user.lastName}`}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              {/* Mobile Profile Dropdown */}
+              <motion.div 
+                className={`absolute right-0 top-full z-[999] flex w-[160px] xs:w-[180px] mt-1 flex-col rounded-lg bg-white backdrop-blur-xl p-2 xs:p-3 text-richblack-900 shadow-[0_8px_32px_rgba(0,0,0,0.2)] border border-white/20 transition-all duration-300 ${
+                  profileDropdownOpen ? 'visible opacity-100 pointer-events-auto' : 'invisible opacity-0 pointer-events-none'
+                }`}
+                initial={false}
+                animate={{ 
+                  scale: profileDropdownOpen ? 1 : 0.8, 
+                  opacity: profileDropdownOpen ? 1 : 0,
+                  y: profileDropdownOpen ? 0 : -10
+                }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="absolute right-2 xs:right-4 top-0 h-2 w-2 xs:h-3 xs:w-3 rotate-45 translate-y-[-50%] select-none rounded bg-white"></div>
+                <motion.div whileHover={{ x: 3, backgroundColor: "rgba(0,0,0,0.05)" }}>
+                  <Link 
+                    to="/dashboard/my-profile" 
+                    className="rounded-lg py-1.5 xs:py-2 px-2 xs:px-3 hover:bg-richblack-50 block text-xs xs:text-sm font-medium transition-all duration-200"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                </motion.div>
+                {user.accountType === "Admin" && (
+                  <motion.div whileHover={{ x: 3, backgroundColor: "rgba(0,0,0,0.05)" }}>
+                    <Link 
+                      to="/admin" 
+                      className="rounded-lg py-1.5 xs:py-2 px-2 xs:px-3 hover:bg-richblack-50 block text-xs xs:text-sm font-medium transition-all duration-200"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      Admin Dashboard
+                    </Link>
+                  </motion.div>
+                )}
+                <motion.button 
+                  onClick={() => {
+                    dispatch(logout(navigate));
+                    setProfileDropdownOpen(false);
+                  }} 
+                  className="rounded-lg py-1.5 xs:py-2 px-2 xs:px-3 hover:bg-richblack-50 text-left text-xs xs:text-sm font-medium transition-all duration-200"
+                  whileHover={{ x: 3, backgroundColor: "rgba(0,0,0,0.05)" }}
+                >
+                  Logout
+                </motion.button>
+              </motion.div>
             </motion.div>
           )}
 
@@ -438,39 +495,55 @@ const ModernNavbar = () => {
             >
               <NotificationPanel />
               <div className="relative profile-dropdown-container">
-                <motion.img
-                  src={user.image}
-                  alt={`${user.firstName} ${user.lastName}`}
-                  className="h-8 w-8 rounded-full object-cover cursor-pointer border-2 border-transparent hover:border-emerald-400 transition-all duration-300"
-                  title={`${user.firstName} ${user.lastName}`}
-                  whileHover={{ scale: 1.1, borderColor: "#34d399" }}
+                <div
+                  className="h-8 w-8 rounded-full cursor-pointer border-2 border-transparent hover:border-emerald-400 transition-all duration-300 overflow-hidden"
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
+                    console.log('Desktop profile clicked, current state:', profileDropdownOpen);
                     setMobileMenuOpen(false);
-                    setProfileDropdownOpen(!profileDropdownOpen);
+                    const newState = !profileDropdownOpen;
+                    console.log('Setting desktop profile dropdown to:', newState);
+                    setProfileDropdownOpen(newState);
                   }}
-                />
-                {/* Dropdown Menu */}
+                  title={`${user.firstName} ${user.lastName}`}
+                >
+                  <img
+                    src={user.image}
+                    alt={`${user.firstName} ${user.lastName}`}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                {/* Desktop Profile Dropdown Menu */}
                 <motion.div 
-                  className={`absolute right-0 top-[120%] z-[91] flex w-[180px] flex-col rounded-lg bg-white/95 backdrop-blur-xl p-3 text-richblack-900 shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-300 ${
-                    profileDropdownOpen ? 'visible opacity-100' : 'invisible opacity-0'
+                  className={`absolute right-0 top-full z-[999] flex w-[180px] mt-2 flex-col rounded-lg bg-white backdrop-blur-xl p-3 text-richblack-900 shadow-[0_8px_32px_rgba(0,0,0,0.2)] border border-white/20 transition-all duration-300 ${
+                    profileDropdownOpen ? 'visible opacity-100 pointer-events-auto' : 'invisible opacity-0 pointer-events-none'
                   }`}
-                  initial={{ scale: 0.8, opacity: 0 }}
+                  initial={false}
                   animate={{ 
                     scale: profileDropdownOpen ? 1 : 0.8, 
-                    opacity: profileDropdownOpen ? 1 : 0 
+                    opacity: profileDropdownOpen ? 1 : 0,
+                    y: profileDropdownOpen ? 0 : -10
                   }}
                   transition={{ duration: 0.2 }}
                 >
-                  <div className="absolute right-4 top-0 h-3 w-3 rotate-45 translate-y-[-50%] select-none rounded bg-white/95"></div>
+                  <div className="absolute right-4 top-0 h-3 w-3 rotate-45 translate-y-[-50%] select-none rounded bg-white"></div>
                   <motion.div whileHover={{ x: 5, backgroundColor: "rgba(0,0,0,0.05)" }}>
-                    <Link to="/dashboard/my-profile" className="rounded-lg py-2 px-3 hover:bg-richblack-50 block text-sm font-medium transition-all duration-200">
+                    <Link 
+                      to="/dashboard/my-profile" 
+                      className="rounded-lg py-2 px-3 hover:bg-richblack-50 block text-sm font-medium transition-all duration-200"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
                       Dashboard
                     </Link>
                   </motion.div>
                   {user.accountType === "Admin" && (
                     <motion.div whileHover={{ x: 5, backgroundColor: "rgba(0,0,0,0.05)" }}>
-                      <Link to="/admin" className="rounded-lg py-2 px-3 hover:bg-richblack-50 block text-sm font-medium transition-all duration-200">
+                      <Link 
+                        to="/admin" 
+                        className="rounded-lg py-2 px-3 hover:bg-richblack-50 block text-sm font-medium transition-all duration-200"
+                        onClick={() => setProfileDropdownOpen(false)}
+                      >
                         Admin Dashboard
                       </Link>
                     </motion.div>
@@ -478,7 +551,6 @@ const ModernNavbar = () => {
                   <motion.button 
                     onClick={() => {
                       dispatch(logout(navigate));
-                      setMobileMenuOpen(false);
                       setProfileDropdownOpen(false);
                     }} 
                     className="rounded-lg py-2 px-3 hover:bg-richblack-50 text-left text-sm font-medium transition-all duration-200"
