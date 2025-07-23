@@ -187,6 +187,58 @@ module.exports = {
       'lg': '1024px',
       'xl': '1280px',
       '2xl': '1536px',
+      '3xl': '1920px',
+    },
+    fontSize: {
+      'xs': ['0.7rem', { lineHeight: '1rem' }],
+      'sm': ['0.8rem', { lineHeight: '1.25rem' }],
+      'base': ['0.9rem', { lineHeight: '1.4rem' }],
+      'lg': ['1rem', { lineHeight: '1.5rem' }],
+      'xl': ['1.1rem', { lineHeight: '1.6rem' }],
+      '2xl': ['1.3rem', { lineHeight: '1.8rem' }],
+      '3xl': ['1.6rem', { lineHeight: '2rem' }],
+      '4xl': ['2rem', { lineHeight: '2.4rem' }],
+      '5xl': ['2.5rem', { lineHeight: '3rem' }],
+      '6xl': ['3rem', { lineHeight: '3.6rem' }],
+      '7xl': ['3.5rem', { lineHeight: '4.2rem' }],
+      '8xl': ['4rem', { lineHeight: '4.8rem' }],
+      '9xl': ['4.5rem', { lineHeight: '5.4rem' }],
+    },
+    spacing: {
+      '0': '0px',
+      '0.5': '0.1rem',
+      '1': '0.2rem',
+      '1.5': '0.3rem',
+      '2': '0.4rem',
+      '2.5': '0.5rem',
+      '3': '0.6rem',
+      '3.5': '0.7rem',
+      '4': '0.8rem',
+      '5': '1rem',
+      '6': '1.2rem',
+      '7': '1.4rem',
+      '8': '1.6rem',
+      '9': '1.8rem',
+      '10': '2rem',
+      '11': '2.2rem',
+      '12': '2.4rem',
+      '14': '2.8rem',
+      '16': '3.2rem',
+      '20': '4rem',
+      '24': '4.8rem',
+      '28': '5.6rem',
+      '32': '6.4rem',
+      '36': '7.2rem',
+      '40': '8rem',
+      '44': '8.8rem',
+      '48': '9.6rem',
+      '52': '10.4rem',
+      '56': '11.2rem',
+      '60': '12rem',
+      '64': '12.8rem',
+      '72': '14.4rem',
+      '80': '16rem',
+      '96': '19.2rem',
     },
     extend: {
       colors: {
@@ -207,15 +259,7 @@ module.exports = {
           400: "#F87171",  // Bright red for error states
           500: "#EF4444",
           600: "#DC2626"
-        }
-      },
-      maxWidth: {
-        maxContent: "1260px",
-        maxContentTab: "650px"
-      },
-    },
-    extend: {
-      colors: {
+        },
         orange: {
           400: "#F97316",
           500: "#EA580C"
@@ -223,7 +267,17 @@ module.exports = {
         indigo: {
           400: "#7f9cf5"
         }
-      }
+      },
+      maxWidth: {
+        maxContent: "1140px",
+        maxContentTab: "580px",
+        maxContentMobile: "480px"
+      },
+      scale: {
+        '85': '0.85',
+        '90': '0.90',
+        '95': '0.95',
+      },
     }
   },
   plugins: [

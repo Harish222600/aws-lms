@@ -2,23 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* === BASE LAYER === */
+@layer base {
+  html {
+    font-size: 90%; /* Scale down base font-size */
+  }
+
+  body {
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+}
+
+/* === UTILITIES === */
 @layer utilities {
-  /* Fade in up animation */
   .animate-fade-in-up {
     animation: fadeInUp 0.5s ease-out;
   }
 
-/* Optimized animations - reduce frequency for better performance */
-.animate-pulse-glow {
-  animation: pulseGlow 3s infinite;
-  will-change: opacity, filter;
-}
+  .animate-pulse-glow {
+    animation: pulseGlow 3s infinite;
+    will-change: opacity, filter;
+  }
 
-/* Reduce bounce frequency */
-.group-hover\:animate-bounce {
-  animation: bounce 2s infinite;
-  will-change: transform;
-}
+  .group-hover\:animate-bounce {
+    animation: bounce 2s infinite;
+    will-change: transform;
+  }
+
+  /* Compact utility for smaller paddings/gaps if needed */
+  .compact {
+    @apply p-2 md:p-4;
+  }
 }
 
 @keyframes fadeInUp {
@@ -52,27 +73,36 @@
   }
 }
 
+@keyframes floating {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: rgba(15, 23, 42, 0.1);
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.2);
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.3);
 }
 
-/* Optimized transitions - Only apply to specific elements to reduce reflow */
+/* Optimized transitions */
 button, .btn, .card, .modal {
   transition-property: background-color, border-color, color, opacity, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -86,15 +116,12 @@ button, .btn, .card, .modal {
   will-change: auto;
 }
 
-/* Remove expensive universal selector transitions */
-/* Removed global * selector for better performance */
-
 /* Grid background pattern */
 .bg-grid-white\/5 {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.05)'%3E%3Cpath d='M0 .5H31.5V32'/%3E%3C/svg%3E");
 }
 
-/* Classic Dashboard Components */
+/* === COMPONENTS LAYER === */
 @layer components {
   .card-gradient {
     @apply bg-[#2d2d2d] border border-[#404040];
@@ -111,50 +138,67 @@ button, .btn, .card, .modal {
   .stats-card {
     @apply bg-[#2d2d2d] border border-[#404040] transition-shadow duration-200 hover:shadow-md;
   }
+
+  /* Label, form, section heading, buttons reused from your base */
+  .lable-style {
+    @apply text-[14px] text-richblack-5;
+  }
+
+  .form-style {
+    @apply rounded-lg bg-richblack-700 p-3 text-[16px] leading-[24px] text-richblack-5 shadow-[0_1px_0_0] shadow-white/30 placeholder:text-richblack-400 focus:outline-none;
+  }
+
+  .section_heading {
+    @apply text-2xl font-bold text-richblack-5 lg:text-4xl;
+  }
+
+  .yellowButton {
+    @apply cursor-pointer rounded-md bg-yellow-50 px-[20px] py-[8px] font-semibold text-richblack-900 hover:bg-black hover:text-yellow-50 duration-300;
+  }
+
+  .blackButton {
+    @apply cursor-pointer rounded-md bg-richblack-800 px-[20px] py-[8px] font-semibold text-richblack-5 hover:bg-richblack-5 hover:text-richblack-800 duration-300;
+  }
+
+  .btn-modern {
+    @apply px-6 py-3 rounded-xl font-semibold;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-purple-500 to-blue-500 text-white;
+    transition: opacity 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-700 text-white;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-slate-600;
+  }
+
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-500 to-pink-500 text-white;
+    transition: opacity 0.2s ease;
+  }
+
+  .btn-danger:hover {
+    opacity: 0.9;
+  }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes floating {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
-}
-
-
-
-html,
-body {
-  overflow-x: hidden;
-  scroll-behavior: smooth;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* === EXISTING STYLES PRESERVED === */
 
 /* use in homePage */
 .homepage_bg {
   background: url('./assets/Images/bghome.svg');
 }
-
 
 .gradient_color {
   background: linear-gradient(118.19deg, #1FA2FF -3.62%, #12D8FA 50.44%, #A6FFCB 104.51%),
@@ -163,7 +207,6 @@ body {
   background-clip: text;
   color: transparent;
 }
-
 
 /* ===== Scrollbar CSS ===== */
 /* Firefox */
@@ -189,7 +232,6 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background-color: #767986f5;
 }
-
 
 /* loading spinner  */
 .custom-loader {
@@ -222,33 +264,6 @@ body {
   }
 }
 
-
-.lable-style {
-  @apply text-[14px] text-richblack-5;
-}
-
-.form-style {
-  @apply rounded-lg bg-richblack-700 p-3 text-[16px] leading-[24px] text-richblack-5 shadow-[0_1px_0_0] shadow-white/30 placeholder:text-richblack-400 focus:outline-none;
-}
-
-.section_heading {
-  @apply text-2xl font-bold text-richblack-5 lg:text-4xl;
-}
-
-
-/* Buttons */
-.yellowButton {
-  @apply cursor-pointer rounded-md bg-yellow-50 px-[20px] py-[8px] font-semibold text-richblack-900 hover:bg-black hover:text-yellow-50 duration-300;
-}
-
-.blackButton {
-  @apply cursor-pointer rounded-md bg-richblack-800 px-[20px] py-[8px] font-semibold text-richblack-5 hover:bg-richblack-5 hover:text-richblack-800 duration-300;
-}
-
-
-
-
-
 /* Loading skeleton */
 .skeleton {
   position: relative;
@@ -279,7 +294,6 @@ body {
   }
 }
 
-
 /* Add top margin to main content to prevent overlap with fixed navbar */
 .w-screen.min-h-screen.bg-richblack-900.flex.flex-col.font-inter {
   padding-top: 3.5rem; /* 56px, matching navbar height */
@@ -292,8 +306,6 @@ body {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.125);
 }
-
-
 
 /* Optimized code block gradients - reduce expensive blur */
 .code-block1-grad {
@@ -342,15 +354,11 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-
-
-
 .code-border {
   background: linear-gradient(111.93deg,
       rgba(14, 26, 45, 0.24) -1.4%,
       rgba(17, 30, 50, 0.38) 104.96%)
 }
-
 
 /* used in home.jsx - random background  */
 .opacity_layer_bg {
@@ -358,17 +366,6 @@ body {
 }
 
 /* Custom Animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes slideInLeft {
   from {
     opacity: 0;
@@ -386,15 +383,6 @@ body {
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
   }
 }
 
@@ -427,14 +415,6 @@ body {
   background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;
 }
-
-.glass-effect {
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  background-color: rgba(17, 25, 40, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.125);
-}
-
 
 /* Classic Dashboard Styles */
 .dashboard-gradient {
@@ -655,43 +635,6 @@ body {
   background: linear-gradient(135deg, #6b7280, #4b5563);
 }
 
-/* Optimized button styles - reduce expensive transforms */
-.btn-modern {
-  @apply px-6 py-3 rounded-xl font-semibold;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
-}
-
-.btn-modern:hover {
-  opacity: 0.9;
-}
-
-.btn-primary {
-  @apply bg-gradient-to-r from-purple-500 to-blue-500 text-white;
-  transition: opacity 0.2s ease;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-}
-
-.btn-secondary {
-  @apply bg-slate-700 text-white;
-  transition: background-color 0.2s ease;
-}
-
-.btn-secondary:hover {
-  @apply bg-slate-600;
-}
-
-.btn-danger {
-  @apply bg-gradient-to-r from-red-500 to-pink-500 text-white;
-  transition: opacity 0.2s ease;
-}
-
-.btn-danger:hover {
-  opacity: 0.9;
-}
-
 /* Modern Toast Animations */
 @keyframes slideInDown {
   from {
@@ -871,3 +814,7 @@ body {
   }
 }
 
+/* === Example: Add a compact card === */
+.compact-card {
+  @apply p-2 md:p-4;
+}

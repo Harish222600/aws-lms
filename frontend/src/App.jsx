@@ -120,7 +120,7 @@ function App() {
   }, [showArrow]);
 
   return (
-    <div className="w-screen min-h-screen bg-richblack-900 flex flex-col font-inter pt-24">
+    <div className="w-screen min-h-screen bg-richblack-900 flex flex-col font-inter pt-16 sm:pt-20 md:pt-22 lg:pt-24">
       <ModernNavbar />
       <Toast />
 
