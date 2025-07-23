@@ -89,6 +89,52 @@ function App() {
 
   const { user } = useSelector((state) => state.profile)
 
+  // Disable right-click, text selection, and drag functionality
+  useEffect(() => {
+    const disableRightClick = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const disableTextSelection = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const disableDragStart = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const disableKeyboardShortcuts = (e) => {
+      // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S
+      if (
+        e.keyCode === 123 || // F12
+        (e.ctrlKey && e.shiftKey && e.keyCode === 73) || // Ctrl+Shift+I
+        (e.ctrlKey && e.shiftKey && e.keyCode === 74) || // Ctrl+Shift+J
+        (e.ctrlKey && e.keyCode === 85) || // Ctrl+U
+        (e.ctrlKey && e.keyCode === 83) // Ctrl+S
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('contextmenu', disableRightClick);
+    document.addEventListener('selectstart', disableTextSelection);
+    document.addEventListener('dragstart', disableDragStart);
+    document.addEventListener('keydown', disableKeyboardShortcuts);
+
+    // Cleanup function to remove event listeners
+    return () => {
+      document.removeEventListener('contextmenu', disableRightClick);
+      document.removeEventListener('selectstart', disableTextSelection);
+      document.removeEventListener('dragstart', disableDragStart);
+      document.removeEventListener('keydown', disableKeyboardShortcuts);
+    };
+  }, []);
+
   // Scroll to the top of the page when the component mounts
   const location = useLocation();
   useEffect(() => {
